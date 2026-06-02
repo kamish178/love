@@ -493,7 +493,7 @@ textarea::placeholder { color: rgba(240,234,255,0.25); }
       <button class="num-btn" onclick="pinPress('0')">0</button>
       <button class="num-btn del" onclick="pinDel()">⌫</button>
     </div>
-    <div class="lock-hint">PIN por defecto: <strong>1234</strong> — <a onclick="showChangePinPrompt()">Cambiar PIN</a></div>
+    <div class="lock-hint">Ingresa tu PIN de 4 dígitos</div>
   </div>
 </div>
 
@@ -616,7 +616,7 @@ textarea::placeholder { color: rgba(240,234,255,0.25); }
 <!-- ===================== FIREBASE CONFIG ===================== -->
 <!-- 🔧 REEMPLAZA CON TUS VALORES DE FIREBASE -->
 <script>
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDG72V0FlZx76_wBintO1A2aiNrUMXS2dU",
   authDomain: "love-for-you-9354a.firebaseapp.com",
   projectId: "love-for-you-9354a",
@@ -683,13 +683,16 @@ function lockApp() {
 }
 
 function showChangePinPrompt() {
-  const newPin = prompt('Ingresa tu nuevo PIN de 4 dígitos:');
-  if (newPin && /^\d{4}$/.test(newPin)) {
-    localStorage.setItem('app_pin', newPin);
-    showToast('✅ PIN actualizado');
-  } else if (newPin) {
-    showToast('El PIN debe tener exactamente 4 dígitos');
-  }
+  const current = prompt("Primero ingresa tu PIN actual:");
+  if (!current) return;
+  if (current !== getSavedPin()) { showToast("❌ PIN actual incorrecto"); return; }
+  const newPin = prompt("Ingresa tu nuevo PIN de 4 dígitos:");
+  if (!newPin) return;
+  if (!/^\d{4}$/.test(newPin)) { showToast("El PIN debe tener exactamente 4 dígitos"); return; }
+  const confirm = prompt("Repite el nuevo PIN para confirmar:");
+  if (confirm !== newPin) { showToast("❌ Los PINs no coinciden"); return; }
+  localStorage.setItem("app_pin", newPin);
+  showToast("✅ PIN actualizado correctamente");
 }
 
 // ===== APP INIT =====
