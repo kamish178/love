@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080810">
+<title>Mi Amor 💕</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #080810;
+  --text: #f0eaff;
+  --muted: rgba(240,234,255,0.45);
+  --accent: #e879a0;
+  --accent2: #a78bfa;
+  --border: rgba(255,255,255,0.1);
+}
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 85%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 50% 5%, rgba(255,255,255,0.7) 0%, transparent 100%);
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 0%, rgba(167,139,250,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 100%, rgba(232,121,160,0.09) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.logo { font-size: 52px; margin-bottom: 20px; display: block; }
+
+.title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+.title em { color: var(--accent); }
+
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 300;
+  margin-bottom: 44px;
+  line-height: 1.5;
+}
+
+.btn-group { display: flex; flex-direction: column; gap: 14px; }
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+.btn::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-ella::before {
+  background: linear-gradient(90deg, transparent, rgba(232,121,160,0.7), transparent);
+}
+.btn-yo::before {
+  background: linear-gradient(90deg, transparent, rgba(167,139,250,0.7), transparent);
+}
+.btn:active { transform: scale(0.98); }
+.btn:active::before { opacity: 1; }
+.btn:active.btn-ella { border-color: rgba(232,121,160,0.35); background: rgba(232,121,160,0.06); }
+.btn:active.btn-yo { border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.06); }
+
+.btn-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.btn-ella .btn-icon {
+  background: rgba(232,121,160,0.12);
+  border: 1px solid rgba(232,121,160,0.2);
+}
+.btn-yo .btn-icon {
+  background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.2);
+}
+
+.btn-info { flex: 1; }
+.btn-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.btn-ella .btn-title { color: #f0a8c8; }
+.btn-yo .btn-title { color: #c4b5fd; }
+.btn-desc {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.btn-arrow {
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: 40px;
+  font-size: 11px;
+  color: rgba(240,234,255,0.25);
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <span class="logo">💕</span>
+  <div class="title">Hecho con<br><em>todo mi amor</em></div>
+  <div class="subtitle">Elige tu acceso para continuar</div>
+
+  <div class="btn-group">
+    <a href="app-ella.html" class="btn btn-ella">
+      <div class="btn-icon">🌸</div>
+      <div class="btn-info">
+        <div class="btn-title">Para ella</div>
+        <div class="btn-desc">Frases bonitas y mensajes especiales</div>
+      </div>
+      <div class="btn-arrow">›</div>
+    </a>
+
+    <a href="app-yo.html" class="btn btn-yo">
+      <div class="btn-icon">💌</div>
+      <div class="btn-info">
+        <div class="btn-title">Mi panel</div>
+        <div class="btn-desc">Enviarle mensajes (acceso con PIN)</div>
+      </div>
+      <div class="btn-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="footer">Solo ustedes dos tienen este enlace ✨</div>
+</div>
+</body>
+</html>
