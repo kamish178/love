@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a14">
+<title>Mi Panel 💌</title>
+<link rel="manifest" href="manifest-yo.json">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --bg: #080810;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0eaff;
+  --muted: rgba(240,234,255,0.45);
+  --accent: #e879a0;
+  --accent2: #a78bfa;
+  --green: #34d399;
+  --gold: #f4c47a;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 40%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(2px 2px at 45% 5%, rgba(255,255,255,0.6) 0%, transparent 100%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ===== LOCK SCREEN ===== */
+#lock-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px;
+}
+#lock-screen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(232,121,160,0.07) 0%, transparent 70%);
+}
+
+.lock-logo { font-size: 52px; margin-bottom: 24px; }
+.lock-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.lock-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 36px;
+  font-weight: 300;
+}
+.pin-dots {
+  display: flex; gap: 16px; margin-bottom: 32px;
+}
+.pin-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  transition: all 0.15s;
+}
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(232,121,160,0.5);
+}
+.pin-dot.error {
+  background: #ef4444;
+  border-color: #ef4444;
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  gap: 12px;
+}
+.num-btn {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 400;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.num-btn:active { background: rgba(232,121,160,0.15); border-color: var(--accent); transform: scale(0.94); }
+.num-btn.del { font-size: 18px; color: var(--muted); }
+.num-btn.empty { background: transparent; border-color: transparent; pointer-events: none; }
+
+.lock-hint {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.lock-hint a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+/* ===== MAIN APP ===== */
+.app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 32px; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 52px 24px 12px;
+}
+.topbar-title { font-size: 13px; color: var(--muted); font-weight: 300; letter-spacing: 0.5px; }
+.topbar-lock {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer; color: var(--muted);
+  transition: all 0.2s;
+}
+.topbar-lock:active { border-color: var(--accent); color: var(--accent); }
+
+.hero { padding: 8px 24px 0; }
+.hero-tag {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hero-tag::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(232,121,160,0.4), transparent);
+}
+.hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.hero-title em { font-style: italic; color: var(--accent); }
+.hero-sub { font-size: 13px; color: var(--muted); font-weight: 300; }
+
+/* ===== COMPOSE ===== */
+.compose-section { padding: 24px 20px 0; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.type-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.type-chip {
+  padding: 10px 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.type-chip.active {
+  border-color: var(--accent);
+  background: rgba(232,121,160,0.08);
+}
+.type-chip .chip-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+.type-chip .chip-label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.type-chip.active .chip-label { color: var(--accent); }
+
+.compose-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.compose-box::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(167,139,250,0.3), transparent);
+  border-radius: 20px 20px 0 0;
+}
+textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.6;
+  resize: none;
+  min-height: 110px;
+}
+textarea::placeholder { color: rgba(240,234,255,0.25); }
+.compose-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.char-count { font-size: 11px; color: var(--muted); }
+
+.send-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #db2777, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.send-btn:active { opacity: 0.85; transform: scale(0.98); }
+.send-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ===== AI GENERATOR ===== */
+.ai-section { padding: 20px 20px 0; }
+.ai-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px;
+}
+.ai-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.ai-badge {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.2);
+  color: var(--accent2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.ai-generate-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 14px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-generate-btn:active { border-color: var(--accent2); background: rgba(167,139,250,0.1); }
+.ai-result {
+  display: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.55;
+  padding: 14px;
+  background: rgba(167,139,250,0.06);
+  border: 1px solid rgba(167,139,250,0.15);
+  border-radius: 14px;
+  margin-bottom: 10px;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+.use-ai-btn {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid rgba(167,139,250,0.3);
+  color: var(--accent2);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  display: none;
+  transition: all 0.2s;
+}
+.use-ai-btn:active { background: rgba(167,139,250,0.1); }
+
+/* ===== HISTORY ===== */
+.history-section { padding: 20px 20px 0; }
+.history-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.history-item:last-child { border-bottom: none; }
+.h-ico { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.h-body { flex: 1; }
+.h-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.h-meta { font-size: 11px; color: var(--muted); }
+.h-status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.h-status::before {
+  content: '';
+  width: 5px; height: 5px;
+  background: var(--green);
+  border-radius: 50%;
+}
+
+/* ===== SETTINGS ===== */
+.settings-section { padding: 20px 20px 0; }
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; color: var(--text); }
+.setting-sub { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 300; }
+.setting-input {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  width: 130px;
+  outline: none;
+}
+.setting-input:focus { border-color: var(--accent); }
+
+/* ===== CHANGE PIN ===== */
+.change-pin-btn {
+  margin-top: 4px;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.change-pin-btn:active { border-color: var(--accent); color: var(--accent); }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20,15,40,0.95);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 12px 22px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0;
+  transition: all 0.3s;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Dots loader */
+.loader { display: inline-flex; gap: 5px; align-items: center; }
+.loader span {
+  width: 5px; height: 5px;
+  background: var(--accent2);
+  border-radius: 50%;
+  animation: b 0.8s infinite;
+}
+.loader span:nth-child(2) { animation-delay: 0.15s; }
+.loader span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes b { 0%,80%,100% { transform:translateY(0); } 40% { transform:translateY(-7px); } }
+
+/* Section card wrapper */
+.s-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 20px;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOCK SCREEN ===== -->
+<div id="lock-screen">
+  <div style="position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; width:100%;">
+    <div class="lock-logo">💌</div>
+    <div class="lock-title">Panel privado</div>
+    <div class="lock-sub">Ingresa tu PIN para continuar</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="numpad">
+      <button class="num-btn" onclick="pinPress('1')">1</button>
+      <button class="num-btn" onclick="pinPress('2')">2</button>
+      <button class="num-btn" onclick="pinPress('3')">3</button>
+      <button class="num-btn" onclick="pinPress('4')">4</button>
+      <button class="num-btn" onclick="pinPress('5')">5</button>
+      <button class="num-btn" onclick="pinPress('6')">6</button>
+      <button class="num-btn" onclick="pinPress('7')">7</button>
+      <button class="num-btn" onclick="pinPress('8')">8</button>
+      <button class="num-btn" onclick="pinPress('9')">9</button>
+      <button class="num-btn empty"></button>
+      <button class="num-btn" onclick="pinPress('0')">0</button>
+      <button class="num-btn del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="lock-hint">PIN por defecto: <strong>1234</strong> — <a onclick="showChangePinPrompt()">Cambiar PIN</a></div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div class="app" id="main-app" style="display:none">
+
+  <div class="topbar">
+    <div class="topbar-title">Tu panel de amor 💕</div>
+    <button class="topbar-lock" onclick="lockApp()" title="Bloquear">🔒</button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-tag">Solo para ti</div>
+    <div class="hero-title">Escríbele<br>a <em id="her-name-hero">tu amor</em></div>
+    <div class="hero-sub">Los mensajes llegan al instante a su celular</div>
+  </div>
+
+  <!-- COMPOSE -->
+  <div class="compose-section">
+    <div class="section-label">Tipo de mensaje</div>
+    <div class="type-row">
+      <div class="type-chip active" onclick="selectType(this,'love')" data-type="love">
+        <span class="chip-icon">💕</span>
+        <span class="chip-label">Amor</span>
+      </div>
+      <div class="type-chip" onclick="selectType(this,'morning')" data-type="morning">
+        <span class="chip-icon">🌅</span>
+        <span class="chip-label">Mañana</span>
+      </div>
+      <div class="type-chip" onclick="selectType(this,'night')" data-type="night">
+        <span class="chip-icon">🌙</span>
+        <span class="chip-label">Noche</span>
+      </div>
+    </div>
+
+    <div class="compose-box">
+      <textarea id="msg-input" placeholder="Escríbele algo desde el corazón..." oninput="updateChar()"></textarea>
+      <div class="compose-footer-row">
+        <span class="char-count" id="char-count">0 / 200</span>
+        <span style="font-size:12px; color:var(--muted);" id="connection-status">Sin Firebase</span>
+      </div>
+    </div>
+
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+      💌 Enviar a su corazón
+    </button>
+  </div>
+
+  <!-- AI -->
+  <div class="ai-section">
+    <div class="s-card">
+      <div class="ai-card-header">
+        <div class="section-label" style="margin:0">Generar con IA</div>
+        <div class="ai-badge">✨ Claude</div>
+      </div>
+      <div class="type-row" style="margin-bottom:12px">
+        <div class="type-chip active" id="ai-love" onclick="selectAIType('love')">
+          <span class="chip-icon">💕</span>
+          <span class="chip-label">Amor</span>
+        </div>
+        <div class="type-chip" id="ai-morning" onclick="selectAIType('morning')">
+          <span class="chip-icon">🌅</span>
+          <span class="chip-label">Mañana</span>
+        </div>
+        <div class="type-chip" id="ai-night" onclick="selectAIType('night')">
+          <span class="chip-icon">🌙</span>
+          <span class="chip-label">Noche</span>
+        </div>
+      </div>
+      <button class="ai-generate-btn" onclick="generateAI()">✨ Generar frase bonita</button>
+      <div class="ai-result" id="ai-result"></div>
+      <button class="use-ai-btn" id="use-ai-btn" onclick="useAI()">↑ Usar esta frase</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-section">
+    <div class="section-label">Mensajes enviados</div>
+    <div class="s-card">
+      <div id="history-list">
+        <div style="text-align:center; padding:20px 0; color:var(--muted); font-size:14px;">
+          Aún no hay mensajes enviados
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="settings-section">
+    <div class="section-label">Configuración</div>
+    <div class="s-card">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Su nombre</div>
+          <div class="setting-sub">Aparece en la app de ella</div>
+        </div>
+        <input class="setting-input" id="her-name-set" placeholder="Su nombre" oninput="saveHerName()">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Tu nombre</div>
+          <div class="setting-sub">Aparece como remitente</div>
+        </div>
+        <input class="setting-input" id="my-name-set" placeholder="Tu nombre" oninput="saveMyName()">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Cambiar PIN</div>
+          <div class="setting-sub">Protege tu panel</div>
+        </div>
+        <button class="change-pin-btn" onclick="showChangePinPrompt()">Cambiar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== FIREBASE CONFIG ===================== -->
+<!-- 🔧 REEMPLAZA CON TUS VALORES DE FIREBASE -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDG72V0FlZx76_wBintO1A2aiNrUMXS2dU",
+  authDomain: "love-for-you-9354a.firebaseapp.com",
+  projectId: "love-for-you-9354a",
+  storageBucket: "love-for-you-9354a.firebasestorage.app",
+  messagingSenderId: "429237505040",
+  appId: "1:429237505040:web:2800fb69753b56f2148e95"
+};
+// ============================================================
+
+let db = null;
+let firebaseReady = false;
+let selectedType = 'love';
+let selectedAIType = 'love';
+let aiQuoteText = '';
+let history = JSON.parse(localStorage.getItem('sent_history') || '[]');
+let currentPin = '';
+const DEFAULT_PIN = '1234';
+
+// ===== PIN SYSTEM =====
+function getSavedPin() { return localStorage.getItem('app_pin') || DEFAULT_PIN; }
+
+function pinPress(digit) {
+  if (currentPin.length >= 4) return;
+  currentPin += digit;
+  updatePinDots();
+  if (currentPin.length === 4) {
+    setTimeout(() => checkPin(), 150);
+  }
+}
+
+function pinDel() {
+  currentPin = currentPin.slice(0, -1);
+  updatePinDots();
+}
+
+function updatePinDots(error = false) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    d.classList.toggle('filled', i < currentPin.length && !error);
+    d.classList.toggle('error', i < currentPin.length && error);
+  }
+}
+
+function checkPin() {
+  if (currentPin === getSavedPin()) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex';
+    document.getElementById('main-app').style.flexDirection = 'column';
+    initApp();
+  } else {
+    updatePinDots(true);
+    setTimeout(() => {
+      currentPin = '';
+      updatePinDots();
+    }, 600);
+  }
+}
+
+function lockApp() {
+  currentPin = '';
+  updatePinDots();
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+function showChangePinPrompt() {
+  const newPin = prompt('Ingresa tu nuevo PIN de 4 dígitos:');
+  if (newPin && /^\d{4}$/.test(newPin)) {
+    localStorage.setItem('app_pin', newPin);
+    showToast('✅ PIN actualizado');
+  } else if (newPin) {
+    showToast('El PIN debe tener exactamente 4 dígitos');
+  }
+}
+
+// ===== APP INIT =====
+function initApp() {
+  loadSettings();
+  renderHistory();
+  initFirebase();
+}
+
+function loadSettings() {
+  const hn = localStorage.getItem('her_name') || '';
+  const mn = localStorage.getItem('my_name') || '';
+  document.getElementById('her-name-set').value = hn;
+  document.getElementById('my-name-set').value = mn;
+  if (hn) document.getElementById('her-name-hero').textContent = hn;
+}
+
+function saveHerName() {
+  const v = document.getElementById('her-name-set').value;
+  localStorage.setItem('her_name', v);
+  document.getElementById('her-name-hero').textContent = v || 'tu amor';
+}
+function saveMyName() {
+  localStorage.setItem('my_name', document.getElementById('my-name-set').value);
+}
+
+// ===== FIREBASE =====
+function initFirebase() {
+  if (FIREBASE_CONFIG.apiKey === 'TU_API_KEY') {
+    document.getElementById('connection-status').textContent = '⚠️ Sin Firebase';
+    document.getElementById('connection-status').style.color = '#f4c47a';
+    return;
+  }
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    firebaseReady = true;
+    document.getElementById('connection-status').textContent = '🟢 Conectado';
+    document.getElementById('connection-status').style.color = '#34d399';
+  } catch(e) {
+    document.getElementById('connection-status').textContent = '🔴 Error Firebase';
+  }
+}
+
+// ===== SEND MESSAGE =====
+async function sendMessage() {
+  const text = document.getElementById('msg-input').value.trim();
+  if (!text) { showToast('Escribe algo bonito primero 💕'); return; }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
+
+  const myName = localStorage.getItem('my_name') || 'Tu amor';
+  const icons = { love: '💕', morning: '🌅', night: '🌙' };
+  const now = new Date();
+  const entry = {
+    text, type: selectedType,
+    icon: icons[selectedType],
+    from: myName,
+    time: now.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+    timestamp: now.toISOString()
+  };
+
+  if (firebaseReady && db) {
+    try {
+      await db.collection('messages').add({
+        ...entry,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('💌 Mensaje enviado a su celular');
+    } catch(e) {
+      saveLocalMessage(entry);
+      showToast('💕 Guardado localmente');
+    }
+  } else {
+    saveLocalMessage(entry);
+    showToast('💕 Guardado (activa Firebase para envío en tiempo real)');
+  }
+
+  history.unshift(entry);
+  localStorage.setItem('sent_history', JSON.stringify(history.slice(0,30)));
+  renderHistory();
+  document.getElementById('msg-input').value = '';
+  updateChar();
+  btn.disabled = false;
+  btn.innerHTML = '💌 Enviar a su corazón';
+}
+
+function saveLocalMessage(entry) {
+  const msgs = JSON.parse(localStorage.getItem('love_messages') || '[]');
+  msgs.unshift(entry);
+  localStorage.setItem('love_messages', JSON.stringify(msgs.slice(0,20)));
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (history.length === 0) {
+    el.innerHTML = '<div style="text-align:center; padding:20px 0; color:var(--muted); font-size:14px;">Aún no hay mensajes enviados</div>';
+    return;
+  }
+  el.innerHTML = history.slice(0,10).map(m => `
+    <div class="history-item">
+      <div class="h-ico">${m.icon}</div>
+      <div class="h-body">
+        <div class="h-text">${m.text}</div>
+        <div class="h-meta">${m.time}</div>
+      </div>
+      <div class="h-status">enviado</div>
+    </div>`).join('');
+}
+
+// ===== TYPE SELECT =====
+function selectType(el, type) {
+  document.querySelectorAll('.compose-section .type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedType = type;
+}
+function selectAIType(type) {
+  selectedAIType = type;
+  ['love','morning','night'].forEach(t => {
+    document.getElementById('ai-' + t).classList.toggle('active', t === type);
+  });
+}
+
+// ===== AI =====
+async function generateAI() {
+  const btn = document.querySelector('.ai-generate-btn');
+  const result = document.getElementById('ai-result');
+  const useBtn = document.getElementById('use-ai-btn');
+  btn.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
+  btn.disabled = true;
+  result.style.display = 'none';
+  useBtn.style.display = 'none';
+
+  const prompts = {
+    love: 'Escribe una sola frase de amor muy bonita y original para decirle a tu pareja. En español latinoamericano, tierna y poética. Solo la frase, sin comillas ni explicación.',
+    morning: 'Escribe una sola frase bonita y motivadora de buenos días para una pareja enamorada. En español latinoamericano, cálida y original. Solo la frase, sin comillas ni explicación.',
+    night: 'Escribe una sola frase tierna de buenas noches para una pareja enamorada. En español latinoamericano, poética y dulce. Solo la frase, sin comillas ni explicación.'
+  };
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompts[selectedAIType] }]
+      })
+    });
+    const data = await resp.json();
+    aiQuoteText = data.content.map(c => c.text || '').join('').trim();
+  } catch(e) {
+    const fallback = {
+      love: ['Eres mi lugar favorito en el mundo entero.', 'Contigo, cada momento ordinario se vuelve extraordinario.'],
+      morning: ['Que este amanecer sea tan bonito como lo eres tú. Buenos días, mi vida.', 'Despierta sabiendo que eres lo mejor que me ha pasado. Buenos días.'],
+      night: ['Cierra los ojos sabiendo que eres la persona más amada. Dulces sueños.', 'Que esta noche te traiga el descanso que mereces. Buenas noches, mi cielo.']
+    };
+    const pool = fallback[selectedAIType];
+    aiQuoteText = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  result.textContent = aiQuoteText;
+  result.style.display = 'block';
+  useBtn.style.display = 'block';
+  btn.innerHTML = '✨ Generar otra frase';
+  btn.disabled = false;
+}
+
+function useAI() {
+  document.getElementById('msg-input').value = aiQuoteText;
+  updateChar();
+  // Set matching type
+  const typeMap = { love: 0, morning: 1, night: 2 };
+  const chips = document.querySelectorAll('.compose-section .type-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  chips[typeMap[selectedAIType]].classList.add('active');
+  selectedType = selectedAIType;
+  document.getElementById('msg-input').focus();
+}
+
+function updateChar() {
+  const len = document.getElementById('msg-input').value.length;
+  document.getElementById('char-count').textContent = len + ' / 200';
+  if (len > 200) document.getElementById('msg-input').value = document.getElementById('msg-input').value.slice(0,200);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

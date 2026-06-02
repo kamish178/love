@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d1a">
+<title>Mi Amor 💕</title>
+<link rel="manifest" href="manifest-ella.json">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --bg: #080810;
+  --surface: rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0eaff;
+  --muted: rgba(240,234,255,0.45);
+  --accent: #e879a0;
+  --accent2: #a78bfa;
+  --gold: #f4c47a;
+  --glow: rgba(232, 121, 160, 0.18);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Stars background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 85%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(2px 2px at 50% 5%, rgba(255,255,255,0.7) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 0%, rgba(167,139,250,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 100%, rgba(232,121,160,0.10) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ===== TOP BAR ===== */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 52px 24px 16px;
+}
+.time-display {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ===== HERO ===== */
+.hero {
+  padding: 24px 28px 0;
+  flex: 0 0 auto;
+}
+.greeting-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.greeting-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(232,121,160,0.4), transparent);
+}
+.hero-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.hero-name em {
+  font-style: italic;
+  color: var(--accent);
+}
+.hero-sub {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 300;
+  letter-spacing: 0.3px;
+}
+
+/* ===== MAIN QUOTE CARD ===== */
+.quote-section { padding: 28px 20px 0; }
+
+.quote-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: 28px 26px;
+  overflow: hidden;
+}
+.quote-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent2), var(--accent), transparent);
+}
+.quote-card::after {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.quote-ornament {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 64px;
+  line-height: 0.6;
+  color: var(--accent);
+  opacity: 0.4;
+  margin-bottom: 12px;
+  display: block;
+}
+.quote-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  line-height: 1.55;
+  font-style: italic;
+  color: var(--text);
+  font-weight: 300;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.quote-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.quote-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.refresh-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.refresh-btn:active { transform: rotate(180deg); color: var(--accent); }
+
+/* ===== LOVE MESSAGE ===== */
+.love-section { padding: 16px 20px 0; }
+
+.love-card {
+  background: linear-gradient(135deg, rgba(232,121,160,0.08), rgba(167,139,250,0.06));
+  border: 1px solid rgba(232,121,160,0.2);
+  border-radius: 20px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  display: none;
+}
+.love-card.visible { display: block; animation: fadeUp 0.5s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.love-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232,121,160,0.6), transparent);
+}
+.love-from {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.love-from-dot {
+  width: 5px; height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent);
+}
+.love-msg {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.love-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+/* ===== NOTIFICATION SETUP ===== */
+.notif-section { padding: 16px 20px 0; }
+.notif-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.notif-card:active { border-color: var(--accent); }
+.notif-icon {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(232,121,160,0.2), rgba(167,139,250,0.2));
+  border: 1px solid rgba(232,121,160,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.notif-text { flex: 1; }
+.notif-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.notif-sub { font-size: 12px; color: var(--muted); font-weight: 300; }
+.notif-arrow { color: var(--muted); font-size: 18px; }
+
+.notif-card.enabled {
+  border-color: rgba(232,121,160,0.3);
+  background: rgba(232,121,160,0.05);
+}
+.notif-card.enabled .notif-title { color: var(--accent); }
+
+/* ===== FOOTER ===== */
+.footer {
+  margin-top: auto;
+  padding: 28px 20px 40px;
+  text-align: center;
+}
+.hearts { font-size: 22px; letter-spacing: 4px; opacity: 0.6; }
+.footer-text {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* ===== NO FIREBASE BANNER ===== */
+.setup-banner {
+  margin: 16px 20px 0;
+  background: rgba(244,196,122,0.08);
+  border: 1px solid rgba(244,196,122,0.25);
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--gold);
+  line-height: 1.5;
+  display: none;
+}
+.setup-banner strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(30,20,50,0.95);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0;
+  transition: all 0.3s;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="time-display" id="clock-top">--:--</div>
+    <div class="status-dot" id="status-dot" title="Conectada"></div>
+  </div>
+
+  <div class="hero">
+    <div class="greeting-label" id="greeting-label">Buenos días</div>
+    <div class="hero-name">Hola,<br><em id="her-name-display">mi amor</em></div>
+    <div class="hero-sub" id="hero-sub">Tienes un mensaje esperándote ✨</div>
+  </div>
+
+  <div class="setup-banner" id="setup-banner">
+    <strong>⚠️ Firebase no configurado</strong>
+    Sigue las instrucciones del archivo INSTRUCCIONES.md para activar los mensajes en tiempo real y las notificaciones.
+  </div>
+
+  <div class="quote-section">
+    <div class="quote-card">
+      <span class="quote-ornament">"</span>
+      <div class="quote-text" id="main-quote">Cargando tu frase...</div>
+      <div class="quote-footer">
+        <span class="quote-tag" id="quote-tag">✨ Para ti</span>
+        <button class="refresh-btn" onclick="nextQuote()" title="Nueva frase">↻</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="love-section">
+    <div class="love-card" id="love-card">
+      <div class="love-from">
+        <span class="love-from-dot"></span>
+        <span id="love-from-name">Tu amor</span> te escribió
+      </div>
+      <div class="love-msg" id="love-msg-text"></div>
+      <div class="love-time" id="love-msg-time"></div>
+    </div>
+  </div>
+
+  <div class="notif-section">
+    <div class="notif-card" id="notif-card" onclick="requestNotifications()">
+      <div class="notif-icon">🔔</div>
+      <div class="notif-text">
+        <div class="notif-title">Activar notificaciones</div>
+        <div class="notif-sub">Recibe sus mensajes en tu pantalla de bloqueo</div>
+      </div>
+      <div class="notif-arrow">›</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="hearts">💕 ✨ 💕</div>
+    <div class="footer-text">Hecho con amor, solo para ti</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== FIREBASE CONFIG ===================== -->
+<!-- 🔧 REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDG72V0FlZx76_wBintO1A2aiNrUMXS2dU",
+  authDomain: "love-for-you-9354a.firebaseapp.com",
+  projectId: "love-for-you-9354a",
+  storageBucket: "love-for-you-9354a.firebasestorage.app",
+  messagingSenderId: "429237505040",
+  appId: "1:429237505040:web:2800fb69753b56f2148e95"
+};
+const VAPID_KEY = "BNXhpJVqmdfeYAPBjnrHPKHHi6a7sxDeqlirAGedwq9LKy2hD_AJFjXcVULx5P9n36y0BfvpRCOsLyWHvunhL4o";
+// ============================================================
+
+const FRASES = {
+  morning: [
+    "Que este amanecer sea tan cálido como el amor que siento por ti cada día.",
+    "Buenos días a la persona más hermosa del universo. Hoy también vas a brillar.",
+    "El sol salió, pero tú brillas más. Buenos días, vida mía.",
+    "Que tu mañana sea dulce, tu día ligero y tu noche llena de paz. Te amo.",
+    "Despierta sabiendo que alguien en este mundo piensa en ti desde el primer segundo del día.",
+    "Eres el mejor pensamiento con el que empiezo cada mañana. Buenos días, mi cielo.",
+    "Que hoy te traiga todo lo que mereces: mucho amor, paz y cosas que te hagan sonreír.",
+    "Cada día contigo es el más bonito que he vivido. Buenos días, mi todo.",
+  ],
+  afternoon: [
+    "Espero que tu día esté siendo tan increíble como tú eres.",
+    "A mitad del día, solo quería que supieras que estoy pensando en ti.",
+    "Tú haces que cada tarde valga la pena. Te quiero, mi amor.",
+    "El día pasa más bonito cuando sé que al final del tuyo estarás bien.",
+    "Que esta tarde te regale un respiro y una sonrisa que necesitabas.",
+  ],
+  night: [
+    "Cierra los ojos sabiendo que eres la persona más amada del mundo. Buenas noches.",
+    "Que tus sueños sean tan bonitos como lo eres tú. Descansa, vida mía.",
+    "El día terminó, pero mi amor por ti nunca descansa. Buenas noches, mi cielo.",
+    "Duérmete con calma. Mañana estaré aquí, como siempre, pensando en ti.",
+    "Que esta noche te regale el descanso que mereces. Te amo profundamente.",
+    "Buenas noches, mi amor. Sueña cosas bonitas, que te las mereces todas.",
+    "Al cerrar los ojos, recuerda que eres amada de manera infinita. Dulces sueños.",
+    "Esta noche, como cada noche, te mando todo mi amor. Descansa bien.",
+  ]
+};
+
+let quoteIndex = 0;
+let currentPool = [];
+let firebaseReady = false;
+let db = null;
+
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'morning';
+  if (h >= 12 && h < 19) return 'afternoon';
+  return 'night';
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock-top').textContent = h + ':' + m;
+}
+
+function setGreeting() {
+  const tod = getTimeOfDay();
+  const labels = {
+    morning: '🌅 Buenos días',
+    afternoon: '☀️ Buenas tardes',
+    night: '🌙 Buenas noches'
+  };
+  const subs = {
+    morning: 'Que tu día sea tan bonito como tú ✨',
+    afternoon: 'Espero que tu día vaya increíble ✨',
+    night: 'Descansa bien esta noche ✨'
+  };
+  document.getElementById('greeting-label').textContent = labels[tod];
+  document.getElementById('hero-sub').textContent = subs[tod];
+  currentPool = FRASES[tod];
+  quoteIndex = Math.floor(Math.random() * currentPool.length);
+  document.getElementById('main-quote').textContent = currentPool[quoteIndex];
+  const tags = { morning: '🌅 Buenos días', afternoon: '☀️ Buenas tardes', night: '🌙 Buenas noches' };
+  document.getElementById('quote-tag').textContent = tags[tod];
+}
+
+function nextQuote() {
+  quoteIndex = (quoteIndex + 1) % currentPool.length;
+  const el = document.getElementById('main-quote');
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.textContent = currentPool[quoteIndex];
+    el.style.opacity = '1';
+  }, 200);
+  el.style.transition = 'opacity 0.2s';
+}
+
+function showLoveMessage(msg, from, time) {
+  document.getElementById('love-card').classList.add('visible');
+  document.getElementById('love-msg-text').textContent = msg;
+  document.getElementById('love-msg-time').textContent = time || '';
+  if (from) document.getElementById('love-from-name').textContent = from;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ===== FIREBASE INIT =====
+function initFirebase() {
+  if (FIREBASE_CONFIG.apiKey === 'TU_API_KEY') {
+    document.getElementById('setup-banner').style.display = 'block';
+    document.getElementById('status-dot').style.background = '#888';
+    document.getElementById('status-dot').style.boxShadow = 'none';
+    // Load from localStorage as fallback
+    loadLocalMessage();
+    return;
+  }
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    firebaseReady = true;
+    listenForMessages();
+    document.getElementById('status-dot').title = 'Conectada en tiempo real';
+  } catch(e) {
+    console.error('Firebase error:', e);
+    loadLocalMessage();
+  }
+}
+
+function loadLocalMessage() {
+  const msgs = JSON.parse(localStorage.getItem('love_messages') || '[]');
+  if (msgs.length > 0) {
+    const last = msgs[0];
+    showLoveMessage(last.text, last.from, last.time);
+  }
+}
+
+function listenForMessages() {
+  if (!db) return;
+  db.collection('messages')
+    .orderBy('timestamp', 'desc')
+    .limit(1)
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const data = change.doc.data();
+          showLoveMessage(data.text, data.from, formatTime(data.timestamp));
+          showToast('💌 Nuevo mensaje de ' + (data.from || 'tu amor'));
+        }
+      });
+    });
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+// ===== NOTIFICATIONS =====
+async function requestNotifications() {
+  if (!('Notification' in window)) {
+    showToast('Tu navegador no soporta notificaciones');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    document.getElementById('notif-card').classList.add('enabled');
+    document.getElementById('notif-card').querySelector('.notif-title').textContent = 'Notificaciones activadas ✓';
+    document.getElementById('notif-card').querySelector('.notif-sub').textContent = 'Recibirás sus mensajes en tu pantalla';
+    showToast('✅ ¡Notificaciones activadas!');
+    if (firebaseReady && VAPID_KEY !== 'TU_VAPID_KEY') {
+      try {
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+        localStorage.setItem('fcm_token', token);
+        if (db) {
+          await db.collection('tokens').doc('ella').set({ token, updated: new Date() });
+        }
+      } catch(e) { console.log('FCM token error:', e); }
+    }
+    scheduleLocalNotifications();
+  } else {
+    showToast('Necesitas aceptar los permisos de notificación');
+  }
+}
+
+function scheduleLocalNotifications() {
+  // Check time every minute for morning/night notifications
+  setInterval(() => {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    const morningTime = localStorage.getItem('morning_time') || '7:00';
+    const nightTime = localStorage.getItem('night_time') || '22:00';
+    const [mh, mm] = morningTime.split(':').map(Number);
+    const [nh, nm] = nightTime.split(':').map(Number);
+    if (h === mh && m === mm) {
+      const frase = FRASES.morning[Math.floor(Math.random() * FRASES.morning.length)];
+      new Notification('🌅 Buenos días, amor', { body: frase, icon: 'icon-192.png' });
+    }
+    if (h === nh && m === nm) {
+      const frase = FRASES.night[Math.floor(Math.random() * FRASES.night.length)];
+      new Notification('🌙 Buenas noches, mi vida', { body: frase, icon: 'icon-192.png' });
+    }
+  }, 60000);
+}
+
+// Load her name
+const herName = localStorage.getItem('her_name') || '';
+if (herName) document.getElementById('her-name-display').textContent = herName;
+
+const myNameDisplay = localStorage.getItem('my_name') || 'Tu amor';
+document.getElementById('love-from-name').textContent = myNameDisplay;
+
+updateClock();
+setInterval(updateClock, 1000);
+setGreeting();
+initFirebase();
+</script>
+</body>
+</html>
